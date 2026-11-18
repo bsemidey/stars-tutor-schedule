@@ -2,9 +2,9 @@
 
 A searchable, mobile-friendly replacement for the FIU STARS tutor schedule. Students pick a course and see which tutors cover it, when they're available, and whether the slot is in person or online.
 
-**[Live demo (sample data)](https://YOUR-USERNAME.github.io/stars-tutor-schedule/)**
+**[Live demo (sample data)](https://bsemidey.github.io/stars-tutor-schedule/)**
 
-![Find by course view](docs/find-by-course.png)
+![Find by course view](find-by-course.png)
 
 > **Unofficial student prototype.** All tutors and hours in this repo are **fictional sample data**. This is not the official STARS schedule. For real tutoring hours, see [stars.cs.fiu.edu/tutor-schedule](https://stars.cs.fiu.edu/tutor-schedule/).
 
@@ -31,7 +31,7 @@ One self-contained HTML/CSS/JS file that reads the **same two spreadsheet tabs**
 
 | Weekly grid | Mobile |
 |---|---|
-| ![Weekly grid](docs/weekly-grid.png) | ![Mobile view](docs/mobile.png) |
+| ![Weekly grid](weekly-grid.png) | ![Mobile view](mobile.png) |
 
 ### Built for handoff
 
@@ -63,11 +63,11 @@ _To be added after the usability survey: time-to-find and task success, current 
 ## Repo structure
 
 ```
-index.html                      Demo page (prototype banner + widget with sample data)
-widget/stars-tutor-schedule.html  The paste-into-WordPress widget
-sample-data/schedule.csv        Fictional weekly grid, same layout as the real workbook tab
-sample-data/coverage.csv        Fictional course coverage, same layout as the real workbook tab
-docs/                           Screenshots
+index.html                  Demo page (prototype banner + widget with sample data)
+stars-tutor-schedule.html   The paste-into-WordPress widget
+schedule.csv                Fictional weekly grid, same layout as the real workbook tab
+coverage.csv                Fictional course coverage, same layout as the real workbook tab
+*.png                       Screenshots
 ```
 
 ## Run it locally
