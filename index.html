@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>STARS Tutor Schedule Redesign (Prototype)</title>
+<style>
+  body{margin:0;background:#F4F6F9;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .proto{background:#FFF4D6;border-bottom:1px solid #E9CF9C;color:#5C4312;font-size:14px;line-height:1.5;padding:10px 16px;text-align:center}
+  .proto b{color:#4A360E}
+  .proto a{color:#1F5FAD}
+  main{padding:24px 16px 40px}
+</style>
+</head>
+<body>
+<div class="proto" role="note"><b>Unofficial prototype for feedback only.</b> Tutors and hours shown are <b>fictional sample data</b>, not the real STARS schedule. For real tutoring hours, use the <a href="https://stars.cs.fiu.edu/tutor-schedule/">official STARS page</a>.</div>
+<main>
+<!--
+  =====================================================================
+  FIU STARS · Tutor Schedule widget (prototype)
+  Paste this whole file into a WordPress "Custom HTML" block.
+  =====================================================================
+
+  HOW TO UPDATE EACH SEMESTER (no code changes needed)
+  ---------------------------------------------------
+  The widget reads the two tabs of the schedule workbook, saved as CSV:
+    1. The weekly grid tab       -> File > Save As > CSV
+    2. The course-coverage tab   -> File > Save As > CSV
+  Keep the same layout as the workbook: "START TIME" header row with day
+  names across the top, and the coverage tab with "Subject / Catalog # /
+  Course Description" followed by one "Full Name (INITIALS)" column per tutor.
+
+  Option A (recommended, set up once):
+    Put the two CSV links in CONFIG below (scheduleCsvUrl / coverageCsvUrl).
+    After that, staff only replace the files.
+
+  Option B (no links):
+    Paste the CSV contents between the markers
+    "PASTE WEEKLY GRID CSV BELOW" and "PASTE COURSE COVERAGE CSV BELOW".
+
+  If a link is set but can't be loaded, the pasted copy below is used.
+
+  OPTIONAL: marking online / in-person per tutor
+  In the grid, a cell can say "JM ON" (online) or "JM IP" (in person).
+  Unmarked cells are shown as "<room> or online" during in-person
+  hours, and "Online" outside them.
+
+  STAFF CHECK: add #stars-check to the page address to see a data report
+  (unknown initials, tutors with no hours, courses with no tutor, etc.)
+  =====================================================================
+-->
+<div id="stars-sched" class="ss-root" data-version="1.1">
+<style>
+#stars-sched{--ss-navy:#081E3F;--ss-gold:#B6862C;--ss-gold-soft:#FBF3E3;--ss-gold-line:#E9CF9C;--ss-blue:#1F5FAD;--ss-blue-soft:#EAF1FB;--ss-blue-line:#B9CFEE;--ss-green:#16794A;--ss-green-soft:#E6F4EC;--ss-ink:#1C2333;--ss-muted:#5A6376;--ss-line:#DCE2EB;--ss-soft:#F4F6F9;--ss-white:#fff;
+  display:block;width:100%;max-width:1100px;margin:0 auto 24px;padding:0;color:var(--ss-ink);font-size:15px;line-height:1.5;text-align:left;-webkit-text-size-adjust:100%}
+#stars-sched *,#stars-sched *::before,#stars-sched *::after{box-sizing:border-box}
+#stars-sched h2,#stars-sched h3,#stars-sched h4,#stars-sched p,#stars-sched ul,#stars-sched ol,#stars-sched li,#stars-sched table,#stars-sched figure{margin:0;padding:0;border:0;background:none;font-family:inherit;text-transform:none;letter-spacing:normal}
+#stars-sched ul,#stars-sched ol{list-style:none}
+#stars-sched li::before{content:none}
+#stars-sched a{color:var(--ss-blue);text-decoration:underline;text-underline-offset:2px;box-shadow:none;border:0}
+#stars-sched a:hover{color:var(--ss-navy)}
+#stars-sched button{-webkit-appearance:none;appearance:none;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:inherit;font:inherit;font-size:inherit;line-height:inherit;text-transform:none;letter-spacing:normal;text-shadow:none;cursor:pointer;width:auto;height:auto;min-height:0;float:none}
+#stars-sched button:hover,#stars-sched button:active{background:none;color:inherit;box-shadow:none;transform:none}
+#stars-sched button:focus-visible,#stars-sched a:focus-visible,#stars-sched input:focus-visible,#stars-sched [tabindex]:focus-visible{outline:3px solid #7FA8E0;outline-offset:2px}
+#stars-sched input[type="text"],#stars-sched input[type="search"]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:auto;margin:0;padding:12px 40px 12px 42px;border:1.5px solid var(--ss-line);border-radius:10px;background:var(--ss-white);box-shadow:none;color:var(--ss-ink);font:inherit;font-size:16px;line-height:1.4}
+#stars-sched input[type="text"]:focus,#stars-sched input[type="search"]:focus{border-color:var(--ss-navy);outline:none;box-shadow:0 0 0 3px rgba(8,30,63,.12)}
+#stars-sched table{width:100%;border-collapse:separate;border-spacing:0;margin:0}
+#stars-sched th,#stars-sched td{border:0;padding:0;background:none;text-align:left;vertical-align:top;font-weight:inherit}
+#stars-sched .ss-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+#stars-sched .ss-head{background:var(--ss-navy);color:#fff;border-radius:14px 14px 0 0;padding:20px 20px 18px}
+#stars-sched .ss-eyebrow{display:block;color:#E7C27D;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+#stars-sched .ss-title{color:#fff;font-size:26px;line-height:1.2;font-weight:700;margin-top:4px}
+#stars-sched .ss-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+#stars-sched .ss-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:12px 14px;color:#fff}
+#stars-sched .ss-card-k{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#E7C27D}
+#stars-sched .ss-card-v{font-size:15px;font-weight:600;margin-top:3px}
+#stars-sched .ss-card-s{font-size:13px;color:#C9D3E3;margin-top:1px}
+#stars-sched .ss-dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none}
+#stars-sched .ss-dot-campus{background:var(--ss-gold)}
+#stars-sched .ss-dot-online{background:#6FA2E6}
+#stars-sched a.ss-cta{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;padding:8px 14px;border-radius:8px;background:#E7C27D;color:var(--ss-navy);font-weight:700;font-size:14px;text-decoration:none}
+#stars-sched a.ss-cta:hover{background:#F1D6A2;color:var(--ss-navy)}
+
+#stars-sched .ss-body{border:1px solid var(--ss-line);border-top:0;border-radius:0 0 14px 14px;background:var(--ss-white)}
+#stars-sched .ss-tabs{display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--ss-line);background:var(--ss-soft);overflow-x:auto;scrollbar-width:none}
+#stars-sched .ss-tabs::-webkit-scrollbar{display:none}
+#stars-sched button.ss-tab{flex:none;padding:10px 14px 11px;border-radius:9px 9px 0 0;color:var(--ss-muted);font-weight:600;font-size:15px;border:1px solid transparent;border-bottom:0;margin-bottom:-1px;white-space:nowrap}
+#stars-sched button.ss-tab:hover{color:var(--ss-navy)}
+#stars-sched button.ss-tab[aria-selected="true"]{background:var(--ss-white);color:var(--ss-navy);border-color:var(--ss-line)}
+#stars-sched .ss-panel{padding:18px 20px 20px}
+#stars-sched .ss-panel[hidden]{display:none}
+
+#stars-sched .ss-search{position:relative}
+#stars-sched .ss-search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--ss-muted);pointer-events:none}
+#stars-sched button.ss-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;color:var(--ss-muted);font-size:20px;line-height:30px;text-align:center}
+#stars-sched button.ss-clear:hover{background:var(--ss-soft);color:var(--ss-ink)}
+#stars-sched .ss-list{position:absolute;z-index:50;left:0;right:0;top:calc(100% + 6px);max-height:340px;overflow-y:auto;background:#fff;border:1px solid var(--ss-line);border-radius:10px;box-shadow:0 12px 30px rgba(8,30,63,.16);padding:6px}
+#stars-sched .ss-list[hidden]{display:none}
+#stars-sched .ss-group{padding:8px 10px 4px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ss-muted)}
+#stars-sched .ss-opt{display:flex;align-items:baseline;gap:10px;padding:9px 10px;border-radius:7px;cursor:pointer}
+#stars-sched .ss-opt[aria-selected="true"],#stars-sched .ss-opt:hover{background:var(--ss-blue-soft)}
+#stars-sched .ss-opt-code{flex:none;min-width:78px;font-weight:700;color:var(--ss-navy);font-variant-numeric:tabular-nums}
+#stars-sched .ss-opt-title{flex:1;min-width:0}
+#stars-sched .ss-opt-n{flex:none;font-size:12.5px;color:var(--ss-muted)}
+#stars-sched .ss-opt.ss-none .ss-opt-code,#stars-sched .ss-opt.ss-none .ss-opt-title{color:var(--ss-muted)}
+#stars-sched .ss-empty{padding:14px 10px;color:var(--ss-muted)}
+
+#stars-sched .ss-quick{margin-top:14px}
+#stars-sched .ss-quick-k{font-size:13px;color:var(--ss-muted);margin-bottom:6px}
+#stars-sched .ss-chips{display:flex;flex-wrap:wrap;gap:6px}
+#stars-sched button.ss-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid var(--ss-line);border-radius:999px;background:#fff;font-size:13.5px;color:var(--ss-ink);line-height:1.3}
+#stars-sched button.ss-chip:hover{border-color:var(--ss-navy);background:#fff;color:var(--ss-navy)}
+#stars-sched button.ss-chip[aria-pressed="true"]{background:var(--ss-navy);border-color:var(--ss-navy);color:#fff}
+#stars-sched .ss-chip b{font-weight:700}
+
+#stars-sched .ss-result{margin-top:18px}
+#stars-sched .ss-rhead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+#stars-sched .ss-rcode{font-size:13px;font-weight:700;color:var(--ss-gold);letter-spacing:.04em}
+#stars-sched .ss-rtitle{font-size:22px;line-height:1.25;font-weight:700;color:var(--ss-navy)}
+#stars-sched .ss-rsub{color:var(--ss-muted);font-size:14px;margin-top:2px}
+#stars-sched .ss-seg{display:inline-flex;border:1px solid var(--ss-line);border-radius:9px;padding:3px;background:var(--ss-soft)}
+#stars-sched button.ss-seg-b{padding:6px 11px;border-radius:7px;font-size:13.5px;font-weight:600;color:var(--ss-muted);white-space:nowrap}
+#stars-sched button.ss-seg-b:hover{color:var(--ss-navy)}
+#stars-sched button.ss-seg-b[aria-pressed="true"]{background:#fff;color:var(--ss-navy);box-shadow:0 1px 2px rgba(8,30,63,.12)}
+#stars-sched .ss-now{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--ss-green-soft);border:1px solid #BFE0CD}
+#stars-sched .ss-now.ss-later{background:var(--ss-soft);border-color:var(--ss-line)}
+#stars-sched .ss-now-k{flex:none;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ss-green);padding-top:2px}
+#stars-sched .ss-now.ss-later .ss-now-k{color:var(--ss-muted)}
+#stars-sched .ss-pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#1FA463;margin-right:6px;vertical-align:1px;box-shadow:0 0 0 0 rgba(31,164,99,.5);animation:ss-pulse 2s infinite}
+@keyframes ss-pulse{70%{box-shadow:0 0 0 7px rgba(31,164,99,0)}100%{box-shadow:0 0 0 0 rgba(31,164,99,0)}}
+@media (prefers-reduced-motion:reduce){#stars-sched .ss-pulse{animation:none}}
+#stars-sched .ss-tutors{margin-top:14px}
+#stars-sched .ss-days{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px}
+#stars-sched .ss-day{border:1px solid var(--ss-line);border-radius:12px;padding:12px 14px;background:#fff}
+#stars-sched .ss-day.ss-today{border-color:var(--ss-navy);box-shadow:0 0 0 1px var(--ss-navy)}
+#stars-sched .ss-day.ss-off{background:var(--ss-soft)}
+#stars-sched .ss-day-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#stars-sched .ss-day-n{font-weight:700;color:var(--ss-navy);font-size:15.5px}
+#stars-sched .ss-pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--ss-navy);color:#fff}
+#stars-sched .ss-day-sum{font-size:12.5px;color:var(--ss-muted)}
+#stars-sched .ss-bar{position:relative;height:10px;border-radius:5px;background:#E9EDF3;margin:10px 0 3px;overflow:hidden}
+#stars-sched .ss-seg-c,#stars-sched .ss-seg-o{position:absolute;top:0;bottom:0}
+#stars-sched .ss-seg-c{background:var(--ss-gold)}
+#stars-sched .ss-seg-o{background:var(--ss-blue)}
+#stars-sched .ss-nowline{position:absolute;top:-2px;bottom:-2px;width:2px;background:#D93A3A}
+#stars-sched .ss-ticks{position:relative;height:14px;font-size:10.5px;color:var(--ss-muted)}
+#stars-sched .ss-ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+#stars-sched .ss-ticks span:first-child{transform:none}
+#stars-sched .ss-ticks span:last-child{transform:translateX(-100%)}
+#stars-sched .ss-rows{margin-top:8px}
+#stars-sched .ss-row{display:flex;gap:10px;padding:7px 0;border-top:1px dashed var(--ss-line)}
+#stars-sched .ss-row:first-child{border-top:0}
+#stars-sched .ss-who{flex:0 0 40%;min-width:0;font-weight:600;font-size:14px}
+#stars-sched .ss-who small{display:block;font-weight:400;font-size:12px;color:var(--ss-muted)}
+#stars-sched .ss-when{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+#stars-sched .ss-rng{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;font-variant-numeric:tabular-nums}
+#stars-sched .ss-badge{display:inline-flex;align-items:center;gap:5px;padding:1px 7px;border-radius:5px;font-size:11.5px;font-weight:600;white-space:nowrap;line-height:1.5}
+#stars-sched .ss-b-campus{background:var(--ss-gold-soft);color:#7A5715;border:1px solid var(--ss-gold-line)}
+#stars-sched .ss-b-online{background:var(--ss-blue-soft);color:#174A87;border:1px solid var(--ss-blue-line)}
+#stars-sched .ss-b-inperson{background:var(--ss-green-soft);color:#11603A;border:1px solid #BFE0CD}
+#stars-sched .ss-nohelp{font-size:13.5px;color:var(--ss-muted);margin-top:6px}
+
+#stars-sched .ss-note{display:flex;gap:10px;margin-top:16px;padding:11px 13px;border-radius:10px;background:var(--ss-gold-soft);border:1px solid var(--ss-gold-line);font-size:13.5px;color:#5C4312}
+#stars-sched .ss-note b{color:#4A360E}
+#stars-sched .ss-note-i{flex:none;font-weight:700;width:20px;height:20px;border-radius:50%;background:var(--ss-gold);color:#fff;text-align:center;line-height:20px;font-size:13px}
+#stars-sched .ss-callout{margin-top:16px;padding:16px;border-radius:12px;background:var(--ss-soft);border:1px solid var(--ss-line)}
+#stars-sched .ss-callout h3{font-size:17px;color:var(--ss-navy);font-weight:700;margin-bottom:4px}
+
+#stars-sched .ss-wk-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+#stars-sched .ss-daypick{display:flex;gap:6px;overflow-x:auto;padding:2px;scrollbar-width:thin;max-width:100%}
+#stars-sched button.ss-dp{flex:none;min-width:52px;padding:7px 10px;border-radius:9px;border:1px solid var(--ss-line);font-weight:600;font-size:14px;color:var(--ss-ink);text-align:center;background:#fff}
+#stars-sched button.ss-dp:hover{border-color:var(--ss-navy);color:var(--ss-navy);background:#fff}
+#stars-sched button.ss-dp[aria-pressed="true"]{background:var(--ss-navy);border-color:var(--ss-navy);color:#fff}
+#stars-sched button.ss-dp small{display:block;font-size:10.5px;font-weight:600;opacity:.75;line-height:1.1}
+#stars-sched .ss-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ss-muted)}
+#stars-sched .ss-legend span{display:inline-flex;align-items:center;gap:6px}
+#stars-sched .ss-slots{margin-top:14px;border:1px solid var(--ss-line);border-radius:12px;overflow:hidden}
+#stars-sched .ss-slot{display:flex;gap:12px;padding:8px 12px;border-top:1px solid var(--ss-line);border-left:4px solid var(--ss-blue)}
+#stars-sched .ss-slot:first-child{border-top:0}
+#stars-sched .ss-slot.ss-s-campus{border-left-color:var(--ss-gold)}
+#stars-sched .ss-slot.ss-s-now{background:var(--ss-green-soft)}
+#stars-sched .ss-slot-t{flex:0 0 76px;font-weight:700;font-size:13.5px;color:var(--ss-navy);font-variant-numeric:tabular-nums;padding-top:3px}
+#stars-sched .ss-slot-p{flex:1;display:flex;flex-wrap:wrap;gap:5px}
+#stars-sched .ss-tp{display:inline-block;padding:3px 8px;border-radius:6px;background:var(--ss-soft);border:1px solid var(--ss-line);font-size:13px;line-height:1.35;white-space:nowrap}
+#stars-sched .ss-tp i{font-style:normal;font-size:11px;margin-left:4px;opacity:.8}
+#stars-sched .ss-slot-none{color:var(--ss-muted);font-size:13px;padding-top:3px}
+#stars-sched .ss-gridwrap{margin-top:14px;overflow-x:auto;border:1px solid var(--ss-line);border-radius:12px;-webkit-overflow-scrolling:touch}
+#stars-sched table.ss-grid{min-width:860px;font-size:12px}
+#stars-sched .ss-grid th{position:sticky;top:0;background:var(--ss-navy);color:#fff;font-weight:700;padding:8px 6px;text-align:center;font-size:12.5px}
+#stars-sched .ss-grid th:first-child,#stars-sched .ss-grid td:first-child{position:sticky;left:0;z-index:1}
+#stars-sched .ss-grid th:first-child{z-index:2}
+#stars-sched .ss-grid td{padding:5px 4px;border-top:1px solid var(--ss-line);border-left:1px solid var(--ss-line);text-align:center}
+#stars-sched .ss-grid td:first-child{background:var(--ss-soft);border-left:0;font-weight:700;color:var(--ss-navy);white-space:nowrap;padding:5px 8px;text-align:right}
+#stars-sched .ss-grid td.ss-c-campus{background:#FFFCF6}
+#stars-sched .ss-grid .ss-ini{display:inline-block;margin:1px;padding:0 4px;border-radius:4px;border:1px solid var(--ss-line);background:#fff;font-weight:600;font-size:11px;line-height:1.5}
+#stars-sched .ss-key{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px;margin-top:14px;font-size:13px}
+#stars-sched .ss-key b{display:inline-block;min-width:40px;color:var(--ss-navy)}
+
+#stars-sched .ss-tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:14px}
+#stars-sched .ss-tcard{border:1px solid var(--ss-line);border-radius:12px;padding:14px}
+#stars-sched .ss-tcard-h{display:flex;gap:10px;align-items:center}
+#stars-sched .ss-av{flex:none;width:40px;height:40px;border-radius:50%;background:var(--ss-gold-soft);border:1px solid var(--ss-gold-line);color:#7A5715;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+#stars-sched .ss-tname{font-weight:700;color:var(--ss-navy);font-size:15.5px;line-height:1.25}
+#stars-sched .ss-tmeta{font-size:12.5px;color:var(--ss-muted)}
+#stars-sched .ss-sub{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ss-muted);margin:12px 0 5px}
+#stars-sched .ss-hours{font-size:13.5px;display:grid;grid-template-columns:40px 1fr;gap:3px 8px;font-variant-numeric:tabular-nums}
+#stars-sched .ss-hours dt{font-weight:700;color:var(--ss-navy)}
+#stars-sched .ss-hours dd{margin:0}
+#stars-sched button.ss-cc{padding:3px 8px;border-radius:6px;border:1px solid var(--ss-line);font-size:12.5px;font-weight:600;color:var(--ss-navy);background:#fff}
+#stars-sched button.ss-cc:hover{border-color:var(--ss-navy);background:var(--ss-blue-soft);color:var(--ss-navy)}
+
+#stars-sched .ss-foot{padding:12px 20px 16px;border-top:1px solid var(--ss-line);font-size:13px;color:var(--ss-muted)}
+#stars-sched .ss-foot b{color:#B3261E}
+#stars-sched .ss-loading{padding:30px 20px;color:var(--ss-muted);text-align:center}
+#stars-sched .ss-check{margin:0 20px 16px;padding:14px;border:2px dashed #B3261E;border-radius:10px;font-size:13px;background:#FFF7F6}
+#stars-sched .ss-check h3{font-size:15px;color:#B3261E;margin-bottom:6px;font-weight:700}
+#stars-sched .ss-check li{margin:3px 0 3px 16px;list-style:disc}
+#stars-sched .ss-check table{font-size:12.5px;margin-top:6px}
+#stars-sched .ss-check td,#stars-sched .ss-check th{padding:2px 8px 2px 0;border-bottom:1px solid #F0D7D4}
+
+@media (max-width:760px){
+  #stars-sched .ss-info{grid-template-columns:1fr;gap:8px}
+  #stars-sched .ss-card{padding:10px 12px}
+  #stars-sched .ss-head{padding:16px 14px;border-radius:12px 12px 0 0}
+  #stars-sched .ss-title{font-size:22px}
+  #stars-sched .ss-panel{padding:14px 12px 16px}
+  #stars-sched .ss-tabs{padding:8px 8px 0}
+  #stars-sched button.ss-tab{padding:9px 11px 10px;font-size:14.5px}
+  #stars-sched .ss-days,#stars-sched .ss-tgrid{grid-template-columns:1fr}
+  #stars-sched .ss-rtitle{font-size:19px}
+  #stars-sched .ss-who{flex-basis:38%}
+  #stars-sched .ss-foot{padding:12px 12px 14px}
+  #stars-sched .ss-opt-code{min-width:70px}
+}
+</style>
+
+<div class="ss-head">
+  <span class="ss-eyebrow">Free tutoring · CS · IT · Cybersecurity</span>
+  <h2 class="ss-title" data-ss="title">Tutor Schedule</h2>
+  <div class="ss-info" data-ss="info"></div>
+</div>
+<div class="ss-body">
+  <div class="ss-tabs" role="tablist" aria-label="Schedule views">
+    <button type="button" class="ss-tab" role="tab" id="ss-tab-course" aria-controls="ss-p-course" aria-selected="true">Find by course</button>
+    <button type="button" class="ss-tab" role="tab" id="ss-tab-week" aria-controls="ss-p-week" aria-selected="false" tabindex="-1">Weekly schedule</button>
+    <button type="button" class="ss-tab" role="tab" id="ss-tab-tutors" aria-controls="ss-p-tutors" aria-selected="false" tabindex="-1">Tutors</button>
+  </div>
+  <div data-ss="check"></div>
+  <div class="ss-panel" role="tabpanel" id="ss-p-course" aria-labelledby="ss-tab-course">
+    <label class="ss-sr" for="ss-q">Search for a course</label>
+    <div class="ss-search">
+      <svg class="ss-search-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6"/><path d="M13 13l5 5" stroke-linecap="round"/></svg>
+      <input type="text" id="ss-q" autocomplete="off" spellcheck="false" placeholder="Search a course, e.g. COP 3530 or Data Structures" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ss-list">
+      <button type="button" class="ss-clear" data-ss="clear" aria-label="Clear search" hidden>&times;</button>
+      <div class="ss-list" id="ss-list" role="listbox" aria-label="Courses" hidden></div>
+    </div>
+    <div data-ss="course-out"><div class="ss-loading">Loading schedule…</div></div>
+  </div>
+  <div class="ss-panel" role="tabpanel" id="ss-p-week" aria-labelledby="ss-tab-week" hidden><div data-ss="week-out"></div></div>
+  <div class="ss-panel" role="tabpanel" id="ss-p-tutors" aria-labelledby="ss-tab-tutors" hidden><div data-ss="tutors-out"></div></div>
+  <div class="ss-foot"><b>Disclaimer:</b> Tutors’ availability is course- and time-specific. To avoid any inconvenience, please verify the course list in advance or <a data-ss="contact" href="https://stars.cs.fiu.edu/contact-us/">contact us</a> for confirmation.</div>
+</div>
+
+<!-- ============ PASTE WEEKLY GRID CSV BELOW (between the script lines) ============ -->
+<script type="text/plain" data-ss="csv-schedule">
+SAMPLE DATA – STARS Tutor Schedule Fall 2026 (fictional tutors)
+In person timings: Monday to Friday 10AM - 5PM at PG6-106
+Online timings: All days 10AM - 10PM
+Online via WhatsApp: register through the tutor groups form
+
+START TIME,Monday,,,Tuesday,,,Wednesday,,,Thursday,,,Friday,,,Saturday,,,Sunday,,
+10:00 AM,AR,,,SP,,,AR,,,SP,,,CN,,,MG,,,,,
+10:30 AM,AR,,,SP,,,AR,,,SP,,,CN,,,MG,,,,,
+11:00 AM,AR,,,SP,,,AR,,,SP,,,CN,,,MG,,,,,
+11:30 AM,AR,,,SP,,,AR,,,SP,,,CN,,,MG,,,,,
+12:00 PM,AR,,,SP,,,AR,,,SP,,,CN,,,,,,DK,,
+12:30 PM,AR,,,SP,,,AR,,,SP,,,CN,,,,,,DK,,
+1:00 PM,JL,,,SP,,,TB,,,SP,,,,,,DK,,,DK,,
+1:30 PM,JL,,,SP,,,TB,,,SP,,,,,,DK,,,DK,,
+2:00 PM,JL,,,CN,,,TB,,,TB,,,AR,,,DK,,,DK,,
+2:30 PM,JL,,,CN,,,TB,,,TB,,,AR,,,DK,,,DK,,
+3:00 PM,JL,,,CN,,,TB,,,TB,,,AR,,,DK,,,,,
+3:30 PM,JL,,,CN,,,TB,,,TB,,,AR,,,DK,,,,,
+4:00 PM,,,,CN,,,,,,TB,,,,,,,,,,,
+4:30 PM,,,,CN,,,,,,TB,,,,,,,,,,,
+5:00 PM,MG,,,,,,MG,,,,,,LH,,,,,,,,
+5:30 PM,MG,,,,,,MG,,,,,,LH,,,,,,,,
+6:00 PM,MG,,,JL,,,MG,,,JL,,,LH,,,,,,CN,,
+6:30 PM,MG,,,JL,,,MG,,,JL,,,LH,,,,,,CN,,
+7:00 PM,MG,LH,,JL,,,MG,,,JL,,,LH,,,,,,CN,,
+7:30 PM,MG,LH,,JL,,,MG,,,JL,,,LH,,,,,,CN,,
+8:00 PM,LH,,,JL,,,LH,,,JL,,,,,,,,,CN,,
+8:30 PM,LH,,,JL,,,LH,,,JL,,,,,,,,,CN,,
+9:00 PM,LH,,,,,,LH,,,,,,,,,,,,,,
+9:30 PM,LH,,,,,,LH,,,,,,,,,,,,,,
+</script>
+<!-- ============ PASTE COURSE COVERAGE CSV BELOW (between the script lines) ============ -->
+<script type="text/plain" data-ss="csv-coverage">
+SAMPLE DATA – Course coverage (fictional tutors)
+Subject,Catalog #,Course Description,Alex Rivera (AR),Jordan Lee (JL),Sam Patel (SP),Maria Gomez (MG),Chris Nguyen (CN),Taylor Brooks (TB),Dana Kim (DK),Luis Herrera (LH)
+COP,2210,Programming I,1,,1,,1,,,1
+COP,3337,Programming II,1,1,,,1,,,
+COP,3530,Data Structures,,1,1,1,,,,1
+COT,3100,Discrete Structures,,,1,,,1,,
+CDA,3102,Computer Architecture,,,,,,1,,
+COP,4338,Systems Programming,,,,1,,,1,
+COP,4610,Operating Systems,,,,,,,1,
+COP,4555,Principles of Programming Languages,,1,,,,,,
+CEN,4010,Software Engineering I,,,,,1,1,,
+CAP,4630,Artificial Intelligence,,,,1,,,,1
+CAP,4770,Data Mining,,,,,,,,
+CGS,1920,Introduction to Computing,1,,,,,,1,
+CTS,1120,Fundamentals of Cybersecurity,,,,,,,,
+CNT,4713,Net-centric Computing,,,,,,,,
+MAD,2104,Discrete Mathematics,,,1,,,,,
+COP,4710,Database Management,,,,,1,,,
+</script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------------- CONFIG (the only settings staff might change) ---------------- */
+  var CONFIG = {
+    scheduleCsvUrl: '',   // optional link to the weekly-grid CSV (leave '' to use the pasted copy)
+    coverageCsvUrl: '',   // optional link to the course-coverage CSV
+    registerUrl: 'https://stars.cs.fiu.edu/tutor-schedule/',
+    contactUrl: 'https://stars.cs.fiu.edu/contact-us/',
+    timeZone: 'America/New_York',
+    // Used only if the "In person timings" / "Online timings" lines can't be read from the CSV:
+    fallbackInPerson: { from: 'Monday', to: 'Friday', start: '10AM', end: '5PM', room: 'PG6-106' },
+    fallbackOnline: { start: '10AM', end: '10PM' }
+  };
+  /* ------------------------------------------------------------------------------ */
+
+  var root = document.getElementById('stars-sched');
+  if (!root || root.getAttribute('data-ss-ready')) return;
+  root.setAttribute('data-ss-ready', '1');
+
+  var DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  var $ = function (sel) { return root.querySelector(sel); };
+  var $$ = function (sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function clean(s) { return String(s == null ? '' : s).replace(/ /g, ' ').replace(/\s+/g, ' ').trim(); }
+
+  /* ---------- CSV ---------- */
+  function parseCSV(text) {
+    text = String(text || '').replace(/^﻿/, '');
+    var rows = [], row = [], f = '', q = false, i, c;
+    for (i = 0; i < text.length; i++) {
+      c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+        else f += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(f); f = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(f); rows.push(row); row = []; f = '';
+      } else f += c;
+    }
+    if (f !== '' || row.length) { row.push(f); rows.push(row); }
+    return rows;
+  }
+
+  /* ---------- time helpers ---------- */
+  function parseTime(s) {
+    var m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap])\.?\s*m\.?\s*$/i.exec(String(s || ''));
+    if (!m) return null;
+    var h = +m[1] % 12, mi = +(m[2] || 0);
+    if (/p/i.test(m[3])) h += 12;
+    return h * 60 + mi;
+  }
+  function fmt(min) {
+    var h = Math.floor(min / 60) % 24, m = min % 60, ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+    return h12 + (m ? ':' + (m < 10 ? '0' : '') + m : '') + ' ' + ap;
+  }
+  function fmtRange(a, b) { return fmt(a) + ' – ' + fmt(b); }
+  function dayName(s) {
+    s = clean(s).toLowerCase();
+    if (s.length < 3) return null;
+    for (var i = 0; i < DAYS.length; i++) if (DAYS[i].toLowerCase().indexOf(s) === 0) return DAYS[i];
+    return null;
+  }
+  function nowNY() {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', { timeZone: CONFIG.timeZone, weekday: 'long', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date());
+      var o = {}; parts.forEach(function (p) { o[p.type] = p.value; });
+      return { day: o.weekday, min: (+o.hour % 24) * 60 + (+o.minute) };
+    } catch (e) { var d = new Date(); return { day: DAYS[(d.getDay() + 6) % 7], min: d.getHours() * 60 + d.getMinutes() }; }
+  }
+
+  /* ---------- parse weekly grid ---------- */
+  function parseSchedule(rows) {
+    var out = { title: '', term: '', inPerson: null, online: null, onlineVia: '', slot: 30, days: [], times: [], cells: {}, issues: [] };
+    var hdr = -1, r, i, j;
+    for (i = 0; i < rows.length; i++) { if (/^start\s*time$/i.test(clean(rows[i][0]))) { hdr = i; break; } }
+    if (hdr < 0) { out.issues.push('Could not find the "START TIME" header row in the weekly grid CSV.'); return out; }
+
+    for (i = 0; i < hdr; i++) {
+      var line = clean(rows[i].filter(function (x) { return clean(x) && !/do not edit/i.test(x); }).join(' '));
+      if (!line) continue;
+      var tm = /\b(fall|spring|summer)\s*([ab]\s*)?(\d{4})\b/i.exec(line);
+      if (!out.title && /schedule/i.test(line)) { out.title = line; if (tm) out.term = tm[1].charAt(0).toUpperCase() + tm[1].slice(1).toLowerCase() + ' ' + (tm[2] ? tm[2].trim().toUpperCase() + ' ' : '') + tm[3]; }
+      var ip = /in[\s-]*person[^:]*:\s*(\w+)\s*(?:to|-|–|through)\s*(\w+)\s*(?:from)?\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)\s*(?:-|–|to)\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)(?:\s*(?:at|in|@)\s*(.+))?/i.exec(line);
+      if (ip && dayName(ip[1]) && dayName(ip[2])) out.inPerson = { from: dayName(ip[1]), to: dayName(ip[2]), start: parseTime(ip[3]), end: parseTime(ip[4]), room: clean(ip[5] || '') };
+      var on = /online\s*timings?[^:]*:\s*(.*?)(?:from)?\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)\s*(?:-|–|to)\s*(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?)/i.exec(line);
+      if (on) out.online = { label: clean(on[1]) || 'Daily', start: parseTime(on[2]), end: parseTime(on[3]) };
+      var via = /online\s+via\s+([a-z ]+?)\s*:/i.exec(line);
+      if (via) out.onlineVia = clean(via[1]);
+    }
+    if (!out.inPerson) {
+      var f = CONFIG.fallbackInPerson;
+      out.inPerson = { from: f.from, to: f.to, start: parseTime(f.start), end: parseTime(f.end), room: f.room };
+      out.issues.push('Couldn’t read the "In person timings" line; using the fallback in CONFIG.');
+    }
+    if (!out.online) {
+      out.online = { label: 'All days', start: parseTime(CONFIG.fallbackOnline.start), end: parseTime(CONFIG.fallbackOnline.end) };
+      out.issues.push('Couldn’t read the "Online timings" line; using the fallback in CONFIG.');
+    }
+    var a = DAYS.indexOf(out.inPerson.from), b = DAYS.indexOf(out.inPerson.to);
+    out.inPerson.days = DAYS.filter(function (d, k) { return k >= a && k <= b; });
+
+    var H = rows[hdr], starts = [], end = H.length;
+    for (j = 1; j < H.length; j++) {
+      var v = clean(H[j]);
+      if (/start\s*time/i.test(v)) { end = j; break; }
+      var d = dayName(v);
+      if (d) starts.push({ day: d, col: j });
+    }
+    starts.forEach(function (s, k) { s.end = k + 1 < starts.length ? starts[k + 1].col : end; out.days.push(s.day); out.cells[s.day] = {}; });
+    if (!starts.length) out.issues.push('No day names (Monday…Sunday) found in the header row.');
+
+    for (i = hdr + 1; i < rows.length; i++) {
+      r = rows[i];
+      var t = parseTime(r[0]);
+      if (t == null) continue;
+      out.times.push(t);
+      starts.forEach(function (s) {
+        var list = [];
+        for (var c = s.col; c < s.end; c++) {
+          clean(r[c]).split(/[,;\/\n]+/).forEach(function (piece) {
+            var m = /^([A-Za-z]{1,5})\b\s*(.*)$/.exec(clean(piece));
+            if (!m) return;
+            var rest = m[2], mode = null;
+            if (/\b(on|online|virtual|zoom)\b/i.test(rest) || /\*$/.test(rest)) mode = 'online';
+            else if (/\b(ip|in[\s-]?person|campus)\b/i.test(rest)) mode = 'inperson';
+            list.push({ i: m[1].toUpperCase(), mode: mode });
+          });
+        }
+        if (list.length) out.cells[s.day][t] = list;
+      });
+    }
+    out.times.sort(function (x, y) { return x - y; });
+    var diffs = [];
+    for (i = 1; i < out.times.length; i++) if (out.times[i] > out.times[i - 1]) diffs.push(out.times[i] - out.times[i - 1]);
+    if (diffs.length) out.slot = Math.min.apply(null, diffs);
+    if (!out.times.length) out.issues.push('No time rows (like "10:00 AM") found under the header row.');
+    return out;
+  }
+
+  /* ---------- parse course coverage ---------- */
+  function parseCoverage(rows) {
+    var out = { courses: [], tutors: {}, issues: [] }, hdr = -1, i, j, sc = -1, cc = -1, dc = -1, tcols = [];
+    for (i = 0; i < rows.length && hdr < 0; i++) for (j = 0; j < rows[i].length; j++) if (/^subject$/i.test(clean(rows[i][j]))) { hdr = i; sc = j; break; }
+    if (hdr < 0) { out.issues.push('Could not find the "Subject" header row in the course coverage CSV.'); return out; }
+    var H = rows[hdr];
+    for (j = 0; j < H.length; j++) {
+      var v = clean(H[j]);
+      if (/catalog|course\s*#|number/i.test(v) && cc < 0) cc = j;
+      else if (/desc|title/i.test(v) && dc < 0) dc = j;
+      var m = /^(.*?)\s*\(\s*([A-Za-z]{1,5})\s*\)\s*$/.exec(v);
+      if (m) { var ini = m[2].toUpperCase(); tcols.push({ col: j, i: ini }); out.tutors[ini] = m[1]; }
+    }
+    if (cc < 0) cc = sc + 1;
+    if (dc < 0) dc = sc + 2;
+    for (i = hdr + 1; i < rows.length; i++) {
+      var r = rows[i], subj = clean(r[sc]).toUpperCase(), cat = clean(r[cc]);
+      if (!subj || !cat) continue;
+      var who = tcols.filter(function (t) { var x = clean(r[t.col]).toLowerCase(); return x && !/^(0|no|n|false|-|–)$/.test(x); }).map(function (t) { return t.i; });
+      out.courses.push({ id: (subj + cat).replace(/\s+/g, ''), subj: subj, cat: cat, code: subj + ' ' + cat, title: clean(r[dc]), tutors: who });
+    }
+    if (!tcols.length) out.issues.push('No tutor columns like "Full Name (XX)" found in the coverage header.');
+    return out;
+  }
+
+  /* ---------- model ---------- */
+  var M = null;
+  function build(S, C) {
+    var tutors = {}, issues = S.issues.concat(C.issues), unknown = {};
+    function T(i) {
+      if (!tutors[i]) tutors[i] = { i: i, name: C.tutors[i] || i, courses: [], slots: {}, count: 0 };
+      return tutors[i];
+    }
+    Object.keys(C.tutors).forEach(T);
+    C.courses.forEach(function (c) { c.tutors.forEach(function (i) { T(i).courses.push(c); }); });
+    var inP = S.inPerson;
+    function modeOf(day, t, explicit) {
+      if (explicit) return explicit;
+      if (inP && inP.days.indexOf(day) >= 0 && t >= inP.start && t < inP.end) return 'campus';
+      return 'online';
+    }
+    S.days.forEach(function (d) {
+      Object.keys(S.cells[d]).forEach(function (k) {
+        var t = +k;
+        S.cells[d][t].forEach(function (e) {
+          if (!C.tutors[e.i]) unknown[e.i] = (unknown[e.i] || 0) + 1;
+          e.mode = modeOf(d, t, e.mode);
+          var tu = T(e.i);
+          (tu.slots[d] = tu.slots[d] || []).push({ t: t, mode: e.mode });
+          tu.count++;
+        });
+      });
+    });
+    Object.keys(tutors).forEach(function (i) {
+      var tu = tutors[i];
+      tu.ranges = {};
+      Object.keys(tu.slots).forEach(function (d) { tu.ranges[d] = mergeRanges(tu.slots[d], S.slot); });
+      var parts = tu.name.split(' ');
+      tu.short = parts.length > 1 ? parts[0] + ' ' + parts[parts.length - 1].charAt(0) + '.' : tu.name;
+    });
+    var seen = {};
+    Object.keys(tutors).forEach(function (i) { var s = tutors[i].short; (seen[s] = seen[s] || []).push(i); });
+    Object.keys(seen).forEach(function (s) { if (seen[s].length > 1) seen[s].forEach(function (i) { tutors[i].short = tutors[i].name; }); });
+
+    var gridStart = S.times.length ? S.times[0] : 600, gridEnd = S.times.length ? S.times[S.times.length - 1] + S.slot : 1320;
+    if (S.online) { gridStart = Math.min(gridStart, S.online.start); gridEnd = Math.max(gridEnd, S.online.end); }
+    M = { S: S, C: C, tutors: tutors, courses: C.courses, issues: issues, unknown: unknown, gridStart: gridStart, gridEnd: gridEnd };
+  }
+  function mergeRanges(slots, step) {
+    slots = slots.slice().sort(function (a, b) { return a.t - b.t; });
+    var out = [];
+    slots.forEach(function (s) {
+      var last = out[out.length - 1];
+      if (last && last.end === s.t && last.mode === s.mode) last.end = s.t + step;
+      else out.push({ start: s.t, end: s.t + step, mode: s.mode });
+    });
+    return out;
+  }
+
+  /* ---------- UI bits ---------- */
+  var MODE = {
+    campus: { cls: 'ss-b-campus', label: function () { return (M.S.inPerson.room || 'On campus') + ' or online'; } },
+    online: { cls: 'ss-b-online', label: function () { return 'Online'; } },
+    inperson: { cls: 'ss-b-inperson', label: function () { return 'In person' + (M.S.inPerson.room ? ' · ' + M.S.inPerson.room : ''); } }
+  };
+  function badge(mode) { var m = MODE[mode] || MODE.online; return '<span class="ss-badge ' + m.cls + '">' + esc(m.label()) + '</span>'; }
+  function daysPhrase(days) {
+    if (!days.length) return 'no days';
+    if (days.length === 7) return 'every day';
+    return days.map(function (d) { return d.slice(0, 3); }).join(', ');
+  }
+
+  function renderHeader() {
+    var S = M.S, ip = S.inPerson, on = S.online;
+    $('[data-ss="title"]').textContent = (S.term ? S.term + ' ' : '') + 'Tutor Schedule';
+    var ipDays = ip.from.slice(0, 3) + '–' + ip.to.slice(0, 3);
+    var onLabel = /all\s*days|daily|every/i.test(on.label || '') ? 'Every day' : (on.label || 'Online');
+    $('[data-ss="info"]').innerHTML =
+      '<div class="ss-card"><div class="ss-card-k"><span class="ss-dot ss-dot-campus"></span>In person</div>' +
+      '<div class="ss-card-v">' + esc(ipDays + ' · ' + fmtRange(ip.start, ip.end)) + '</div>' +
+      '<div class="ss-card-s">' + esc(ip.room ? 'Room ' + ip.room : '') + '</div></div>' +
+      '<div class="ss-card"><div class="ss-card-k"><span class="ss-dot ss-dot-online"></span>Online</div>' +
+      '<div class="ss-card-v">' + esc(onLabel + ' · ' + fmtRange(on.start, on.end)) + '</div>' +
+      '<div class="ss-card-s">' + esc(S.onlineVia ? 'Through ' + S.onlineVia + ' tutor groups' : 'Through the online tutor groups') + '</div></div>' +
+      '<div class="ss-card"><div class="ss-card-k">Free · registration required</div>' +
+      '<div class="ss-card-s">Register once to join the tutor groups.</div>' +
+      '<a class="ss-cta" href="' + esc(CONFIG.registerUrl) + '" target="_blank" rel="noopener">Register for tutoring <span aria-hidden="true">→</span></a></div>';
+    var c = $('[data-ss="contact"]'); if (c) c.href = CONFIG.contactUrl;
+  }
+
+  /* ---------- course search ---------- */
+  var state = { course: null, mode: 'all', tutor: null, day: null, tq: '' };
+  var input, list, clearBtn, activeIdx = -1, optEls = [];
+  function norm(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function matches(c, q) {
+    if (!q) return true;
+    var hay = norm(c.code + ' ' + c.id + ' ' + c.title), toks = norm(q).split(' ');
+    var compact = norm(q).replace(/ /g, '');
+    if (norm(c.id).indexOf(compact) === 0 || c.cat.indexOf(compact) === 0) return true;
+    return toks.every(function (t) { return hay.indexOf(t) >= 0; });
+  }
+  function optionHTML(c, idx) {
+    var n = c.tutors.length;
+    return '<div class="ss-opt' + (n ? '' : ' ss-none') + '" role="option" id="ss-o-' + idx + '" data-id="' + esc(c.id) + '" aria-selected="false">' +
+      '<span class="ss-opt-code">' + esc(c.code) + '</span><span class="ss-opt-title">' + esc(c.title) + '</span>' +
+      '<span class="ss-opt-n">' + (n ? n + ' tutor' + (n > 1 ? 's' : '') : 'none listed') + '</span></div>';
+  }
+  function renderList() {
+    var q = input.value, hits = M.courses.filter(function (c) { return matches(c, q); });
+    var yes = hits.filter(function (c) { return c.tutors.length; }), no = hits.filter(function (c) { return !c.tutors.length; });
+    var html = '', idx = 0, order = [];
+    if (yes.length) { html += '<div class="ss-group" role="presentation">Courses with tutors</div>'; yes.forEach(function (c) { html += optionHTML(c, idx++); order.push(c); }); }
+    if (no.length) { html += '<div class="ss-group" role="presentation">No tutor listed this term</div>'; no.forEach(function (c) { html += optionHTML(c, idx++); order.push(c); }); }
+    if (!hits.length) html = '<div class="ss-empty">No course matches “' + esc(q) + '”. Try the course number, like 3530.</div>';
+    list.innerHTML = html;
+    optEls = $$('.ss-opt');
+    activeIdx = order.length && q ? 0 : -1;
+    highlight();
+    list.hidden = false; input.setAttribute('aria-expanded', 'true');
+  }
+  function highlight() {
+    optEls.forEach(function (el, k) { el.setAttribute('aria-selected', k === activeIdx ? 'true' : 'false'); });
+    if (activeIdx >= 0 && optEls[activeIdx]) { input.setAttribute('aria-activedescendant', optEls[activeIdx].id); optEls[activeIdx].scrollIntoView({ block: 'nearest' }); }
+    else input.removeAttribute('aria-activedescendant');
+  }
+  function closeList() { list.hidden = true; input.setAttribute('aria-expanded', 'false'); input.removeAttribute('aria-activedescendant'); }
+  function pickCourse(id, fromUser) {
+    var c = M.courses.filter(function (x) { return x.id === id; })[0];
+    if (!c) return;
+    state.course = c; state.tutor = null;
+    input.value = c.code + ' — ' + c.title;
+    clearBtn.hidden = false;
+    closeList();
+    renderCourse();
+    if (fromUser) setHash('course=' + c.id);
+  }
+
+  function setHash(v) { try { history.replaceState(null, '', v ? '#stars-' + v : location.pathname + location.search); } catch (e) {} }
+
+  function quickPicks() {
+    var top = M.courses.filter(function (c) { return c.tutors.length; }).slice().sort(function (a, b) { return b.tutors.length - a.tutors.length; }).slice(0, 8);
+    if (!top.length) return '';
+    return '<div class="ss-quick"><div class="ss-quick-k">Most-covered courses</div><div class="ss-chips">' +
+      top.map(function (c) { return '<button type="button" class="ss-chip" data-course="' + esc(c.id) + '"><b>' + esc(c.code) + '</b> ' + esc(c.title) + '</button>'; }).join('') + '</div></div>';
+  }
+
+  function slotsForCourse(c, modeFilter, onlyTutor) {
+    var map = {};
+    M.S.days.forEach(function (d) {
+      map[d] = {};
+      Object.keys(M.S.cells[d]).forEach(function (k) {
+        var list = M.S.cells[d][k].filter(function (e) {
+          return c.tutors.indexOf(e.i) >= 0 && (!onlyTutor || e.i === onlyTutor) && (modeFilter === 'all' || (modeFilter === 'online' ? e.mode === 'online' : e.mode !== 'online'));
+        });
+        if (list.length) map[d][k] = list;
+      });
+    });
+    return map;
+  }
+
+  function nowNext(c) {
+    var map = slotsForCourse(c, 'all', null), now = nowNY(), step = M.S.slot;
+    var di = DAYS.indexOf(now.day);
+    for (var off = 0; off < 8; off++) {
+      var d = DAYS[(di + off) % 7];
+      if (!map[d]) continue;
+      var ts = Object.keys(map[d]).map(Number).sort(function (a, b) { return a - b; });
+      for (var k = 0; k < ts.length; k++) {
+        var t = ts[k];
+        if (off === 0 && t + step <= now.min) continue;
+        var live = off === 0 && t <= now.min;
+        var who = map[d][t].map(function (e) {
+          var r = (M.tutors[e.i].ranges[d] || []).filter(function (x) { return x.start <= t && x.end > t; })[0];
+          return { tu: M.tutors[e.i], r: r };
+        });
+        return { live: live, day: d, off: off, t: t, who: who };
+      }
+    }
+    return null;
+  }
+
+  function renderCourse() {
+    var out = $('[data-ss="course-out"]'), c = state.course;
+    if (!c) {
+      out.innerHTML = '<div class="ss-callout"><h3>Pick a course to see who can help and when.</h3><p>Search by course number (<b>3530</b>), code (<b>COP 3530</b>) or name (<b>data structures</b>).</p>' + quickPicks() + '</div>' + modeNote();
+      return;
+    }
+    if (!c.tutors.length) {
+      out.innerHTML = '<div class="ss-result"><div class="ss-rcode">' + esc(c.code) + '</div><h3 class="ss-rtitle">' + esc(c.title) + '</h3>' +
+        '<div class="ss-callout"><h3>No tutor is listed for this course this term.</h3><p>Tutors may still be able to help with related topics. <a href="' + esc(CONFIG.contactUrl) + '">Contact STARS</a> to ask, or check a related course.</p>' + quickPicks() + '</div></div>';
+      return;
+    }
+    var today = nowNY(), step = M.S.slot;
+    var map = slotsForCourse(c, state.mode, state.tutor);
+    var all = slotsForCourse(c, 'all', null);
+    var activeDays = M.S.days.filter(function (d) { return Object.keys(all[d]).length; });
+
+    var h = '<div class="ss-result"><div class="ss-rhead"><div><div class="ss-rcode">' + esc(c.code) + '</div>' +
+      '<h3 class="ss-rtitle">' + esc(c.title) + '</h3>' +
+      '<div class="ss-rsub">' + c.tutors.length + ' tutor' + (c.tutors.length > 1 ? 's' : '') + ' · help available ' + esc(daysPhrase(activeDays)) + '</div></div>' +
+      '<div class="ss-seg" role="group" aria-label="Filter by format">' +
+      [['all', 'All'], ['campus', 'In-person hours'], ['online', 'Online only']].map(function (o) {
+        return '<button type="button" class="ss-seg-b" data-mode="' + o[0] + '" aria-pressed="' + (state.mode === o[0]) + '">' + o[1] + '</button>';
+      }).join('') + '</div></div>';
+
+    var nn = nowNext(c);
+    if (nn) {
+      var whoTxt = nn.who.map(function (w) {
+        return '<b>' + esc(w.tu.short) + '</b>' + (w.r ? ' (' + (nn.live ? 'until ' + fmt(w.r.end) : fmtRange(w.r.start, w.r.end)) + ')' : '');
+      }).join(', ');
+      var when = nn.live ? '' : (nn.off === 0 ? 'Today' : nn.off === 1 ? 'Tomorrow' : nn.day) + ' at ' + fmt(nn.t) + ': ';
+      h += '<div class="ss-now' + (nn.live ? '' : ' ss-later') + '"><div class="ss-now-k">' + (nn.live ? '<span class="ss-pulse"></span>Now' : 'Next') + '</div><div>' + esc(when) + whoTxt + '</div></div>';
+    }
+
+    h += '<div class="ss-tutors"><div class="ss-chips" role="group" aria-label="Show one tutor">' +
+      c.tutors.map(function (i) {
+        var tu = M.tutors[i]; if (!tu) return '';
+        return '<button type="button" class="ss-chip" data-tutor="' + esc(i) + '" aria-pressed="' + (state.tutor === i) + '" title="' + esc(tu.name) + '">' + esc(tu.short) + '</button>';
+      }).join('') + '</div></div>';
+
+    h += '<div class="ss-days">';
+    var span = M.gridEnd - M.gridStart;
+    M.S.days.forEach(function (d) {
+      var ts = Object.keys(map[d]).map(Number);
+      var isToday = d === today.day;
+      var rowsHtml = '';
+      var people = {};
+      ts.forEach(function (t) { map[d][t].forEach(function (e) { (people[e.i] = people[e.i] || []).push({ t: t, mode: e.mode }); }); });
+      var ordered = Object.keys(people).map(function (i) { return { i: i, r: mergeRanges(people[i], step) }; })
+        .sort(function (a, b) { return a.r[0].start - b.r[0].start || M.tutors[a.i].name.localeCompare(M.tutors[b.i].name); });
+      ordered.forEach(function (p) {
+        var tu = M.tutors[p.i];
+        rowsHtml += '<div class="ss-row"><div class="ss-who">' + esc(tu.name) + '<small>' + esc(tu.i) + '</small></div><div class="ss-when">' +
+          p.r.map(function (r) { return '<div class="ss-rng"><span>' + esc(fmtRange(r.start, r.end)) + '</span>' + badge(r.mode) + '</div>'; }).join('') + '</div></div>';
+      });
+      var bar = '';
+      ts.forEach(function (t) {
+        var md = map[d][t].some(function (e) { return e.mode !== 'online'; }) ? 'ss-seg-c' : 'ss-seg-o';
+        bar += '<span class="' + md + '" style="left:' + ((t - M.gridStart) / span * 100).toFixed(3) + '%;width:' + (step / span * 100).toFixed(3) + '%;opacity:' + Math.min(1, .45 + .2 * map[d][t].length).toFixed(2) + '"></span>';
+      });
+      if (isToday && today.min >= M.gridStart && today.min <= M.gridEnd) bar += '<span class="ss-nowline" style="left:' + ((today.min - M.gridStart) / span * 100).toFixed(3) + '%" title="Now"></span>';
+      var ticks = '';
+      for (var tk = M.gridStart; tk <= M.gridEnd; tk += 180) ticks += '<span style="left:' + ((tk - M.gridStart) / span * 100).toFixed(3) + '%">' + esc(fmt(tk).replace(':00', '').replace(' ', '').toLowerCase()) + '</span>';
+      var hrs = ts.length * step / 60;
+      h += '<section class="ss-day' + (isToday ? ' ss-today' : '') + (ts.length ? '' : ' ss-off') + '" aria-label="' + esc(d) + '">' +
+        '<div class="ss-day-h"><span class="ss-day-n">' + esc(d) + '</span>' + (isToday ? '<span class="ss-pill">Today</span>' : '<span class="ss-day-sum">' + (hrs ? hrs + ' h covered' : '') + '</span>') + '</div>' +
+        (ts.length ? '<div class="ss-bar" aria-hidden="true">' + bar + '</div><div class="ss-ticks" aria-hidden="true">' + ticks + '</div><div class="ss-rows">' + rowsHtml + '</div>'
+          : '<div class="ss-nohelp">No tutor for this course' + (state.mode !== 'all' || state.tutor ? ' with these filters' : '') + '.</div>') +
+        '</section>';
+    });
+    h += '</div>' + modeNote() + '</div>';
+    out.innerHTML = h;
+  }
+
+  function modeNote() {
+    var ip = M.S.inPerson;
+    var anyExplicit = M.S.days.some(function (d) { return Object.keys(M.S.cells[d]).some(function (k) { return M.S.cells[d][k].some(function (e) { return e.mode === 'inperson'; }); }); });
+    if (anyExplicit) return '';
+    return '<div class="ss-note"><span class="ss-note-i" aria-hidden="true">i</span><div><b>In person or online?</b> ' +
+      esc(ip.from.slice(0, 3) + '–' + ip.to.slice(0, 3) + ' ' + fmtRange(ip.start, ip.end)) + ' is in-person time' + (ip.room ? ' in ' + esc(ip.room) : '') +
+      ', but the schedule doesn’t say whether each tutor is in the room or online during those hours. Everything outside those hours is online. Ask in your tutor group before heading over.</div></div>';
+  }
+
+  /* ---------- weekly tab ---------- */
+  function renderWeek() {
+    var out = $('[data-ss="week-out"]'), S = M.S, now = nowNY();
+    if (!state.day) state.day = S.days.indexOf(now.day) >= 0 ? now.day : S.days[0];
+    var h = '<div class="ss-wk-top"><div class="ss-daypick" role="group" aria-label="Choose a day">' +
+      S.days.map(function (d) { return '<button type="button" class="ss-dp" data-day="' + esc(d) + '" aria-pressed="' + (state.day === d) + '">' + esc(d.slice(0, 3)) + (d === now.day ? '<small>today</small>' : '') + '</button>'; }).join('') +
+      '<button type="button" class="ss-dp" data-day="__all" aria-pressed="' + (state.day === '__all') + '">Week</button></div>' +
+      '<div class="ss-legend"><span><span class="ss-dot ss-dot-campus"></span>In-person hours (' + esc(S.inPerson.room || 'campus') + ' or online)</span><span><span class="ss-dot" style="background:#1F5FAD"></span>Online only</span></div></div>';
+
+    if (state.day === '__all') {
+      h += '<div class="ss-gridwrap" tabindex="0" aria-label="Full week table, scroll sideways"><table class="ss-grid"><thead><tr><th scope="col">Time</th>' +
+        S.days.map(function (d) { return '<th scope="col">' + esc(d) + '</th>'; }).join('') + '</tr></thead><tbody>';
+      S.times.forEach(function (t) {
+        h += '<tr><td>' + esc(fmt(t)) + '</td>';
+        S.days.forEach(function (d) {
+          var list = S.cells[d][t] || [];
+          var campus = S.inPerson.days.indexOf(d) >= 0 && t >= S.inPerson.start && t < S.inPerson.end;
+          h += '<td class="' + (campus ? 'ss-c-campus' : '') + '">' + list.map(function (e) { return '<span class="ss-ini" title="' + esc((M.tutors[e.i] || {}).name || e.i) + '">' + esc(e.i) + '</span>'; }).join('') + '</td>';
+        });
+        h += '</tr>';
+      });
+      h += '</tbody></table></div><div class="ss-sub">Tutor key</div><div class="ss-key">' +
+        Object.keys(M.tutors).map(function (i) { return '<div><b>' + esc(i) + '</b>' + esc(M.tutors[i].name) + '</div>'; }).join('') + '</div>';
+    } else {
+      var d = state.day;
+      h += '<div class="ss-slots">';
+      S.times.forEach(function (t) {
+        var list = S.cells[d][t] || [];
+        var campus = S.inPerson.days.indexOf(d) >= 0 && t >= S.inPerson.start && t < S.inPerson.end;
+        var isNow = d === now.day && now.min >= t && now.min < t + S.slot;
+        h += '<div class="ss-slot' + (campus ? ' ss-s-campus' : '') + (isNow ? ' ss-s-now' : '') + '"><div class="ss-slot-t">' + esc(fmt(t)) + (isNow ? '<br><span class="ss-pill" style="background:#1FA463">Now</span>' : '') + '</div><div class="ss-slot-p">' +
+          (list.length ? list.map(function (e) {
+            var tu = M.tutors[e.i] || { short: e.i, name: e.i };
+            var ex = e.mode === 'inperson' ? '<i>in person</i>' : '';
+            return '<span class="ss-tp" title="' + esc(tu.name + ' (' + e.i + ')') + '">' + esc(tu.short) + ex + '</span>';
+          }).join('') : '<span class="ss-slot-none">No tutors scheduled</span>') + '</div></div>';
+      });
+      h += '</div>';
+    }
+    out.innerHTML = h;
+  }
+
+  /* ---------- tutors tab ---------- */
+  function renderTutors() {
+    var out = $('[data-ss="tutors-out"]');
+    if (!$('[data-ss="tq"]')) {
+      out.innerHTML = '<label class="ss-sr" for="ss-tq">Search tutors</label><div class="ss-search"><svg class="ss-search-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6"/><path d="M13 13l5 5" stroke-linecap="round"/></svg>' +
+        '<input type="text" id="ss-tq" data-ss="tq" autocomplete="off" placeholder="Search tutors by name or initials"></div><div data-ss="tlist"></div>';
+      $('[data-ss="tq"]').addEventListener('input', function () { state.tq = this.value; renderTutorList(); });
+    }
+    renderTutorList();
+  }
+  function renderTutorList() {
+    var q = norm(state.tq);
+    var ts = Object.keys(M.tutors).map(function (i) { return M.tutors[i]; })
+      .filter(function (tu) { return !q || norm(tu.name + ' ' + tu.i).indexOf(q) >= 0; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var h = '<div class="ss-tgrid">' + ts.map(function (tu) {
+      var hrs = '';
+      M.S.days.forEach(function (d) {
+        var r = tu.ranges[d]; if (!r || !r.length) return;
+        var m = []; r.forEach(function (x) { var l = m[m.length - 1]; if (l && l.end === x.start) l.end = x.end; else m.push({ start: x.start, end: x.end }); });
+        hrs += '<dt>' + esc(d.slice(0, 3)) + '</dt><dd>' + m.map(function (x) { return esc(fmtRange(x.start, x.end)); }).join(', ') + '</dd>';
+      });
+      return '<article class="ss-tcard"><div class="ss-tcard-h"><div class="ss-av" aria-hidden="true">' + esc(tu.i) + '</div><div><div class="ss-tname">' + esc(tu.name) + '</div>' +
+        '<div class="ss-tmeta">' + tu.courses.length + ' course' + (tu.courses.length === 1 ? '' : 's') + (tu.count ? '' : ' · not on this week’s schedule') + '</div></div></div>' +
+        (hrs ? '<div class="ss-sub">Hours</div><dl class="ss-hours">' + hrs + '</dl>' : '') +
+        (tu.courses.length ? '<div class="ss-sub">Courses</div><div class="ss-chips">' + tu.courses.map(function (c) { return '<button type="button" class="ss-cc" data-course="' + esc(c.id) + '" title="' + esc(c.title) + '">' + esc(c.code) + '</button>'; }).join('') + '</div>' : '') +
+        '</article>';
+    }).join('') + '</div>';
+    if (!ts.length) h = '<div class="ss-empty">No tutor matches “' + esc(state.tq) + '”.</div>';
+    $('[data-ss="tlist"]').innerHTML = h;
+  }
+
+  /* ---------- tabs ---------- */
+  var rendered = {};
+  function showTab(name, focus) {
+    ['course', 'week', 'tutors'].forEach(function (n) {
+      var tab = $('#ss-tab-' + n), p = $('#ss-p-' + n), on = n === name;
+      tab.setAttribute('aria-selected', on ? 'true' : 'false'); tab.tabIndex = on ? 0 : -1; p.hidden = !on;
+      if (on && focus) tab.focus();
+    });
+    if (name === 'week') renderWeek();
+    if (name === 'tutors' && !rendered.tutors) { renderTutors(); rendered.tutors = true; }
+  }
+
+  /* ---------- staff check ---------- */
+  function renderCheck(src) {
+    if (!/stars-check/.test(location.hash + location.search)) return;
+    var S = M.S, items = [];
+    items.push('Data source: weekly grid from <b>' + esc(src.schedule) + '</b>, course coverage from <b>' + esc(src.coverage) + '</b>.');
+    items.push('Read ' + S.days.length + ' days, ' + S.times.length + ' time rows (' + S.slot + '-minute slots), ' + M.courses.length + ' courses, ' + Object.keys(M.C.tutors).length + ' tutors in the coverage header.');
+    M.issues.forEach(function (x) { items.push(esc(x)); });
+    var unk = Object.keys(M.unknown);
+    if (unk.length) items.push('Initials in the grid with no "Name (XX)" column in the coverage sheet: <b>' + esc(unk.join(', ')) + '</b>.');
+    var noHrs = Object.keys(M.tutors).filter(function (i) { return !M.tutors[i].count; });
+    if (noHrs.length) items.push('Tutors with courses but no hours on the grid: <b>' + esc(noHrs.join(', ')) + '</b>.');
+    var noC = Object.keys(M.tutors).filter(function (i) { return M.tutors[i].count && !M.tutors[i].courses.length; });
+    if (noC.length) items.push('Tutors with hours but no courses checked: <b>' + esc(noC.join(', ')) + '</b>.');
+    var zero = M.courses.filter(function (c) { return !c.tutors.length; });
+    items.push(zero.length + ' of ' + M.courses.length + ' courses have no tutor checked (shown to students as "No tutor listed this term").');
+    $('[data-ss="check"]').innerHTML = '<div class="ss-check"><h3>Staff data check (only visible with #stars-check)</h3><ul>' + items.map(function (x) { return '<li>' + x + '</li>'; }).join('') + '</ul></div>';
+  }
+
+  /* ---------- events ---------- */
+  function wire() {
+    input = $('#ss-q'); list = $('#ss-list'); clearBtn = $('[data-ss="clear"]');
+    input.addEventListener('focus', function () { if (!state.course) renderList(); else input.select(); });
+    input.addEventListener('input', function () { clearBtn.hidden = !input.value; renderList(); });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (list.hidden) renderList(); activeIdx = Math.min(optEls.length - 1, activeIdx + 1); highlight(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(0, activeIdx - 1); highlight(); }
+      else if (e.key === 'Enter') { if (!list.hidden && optEls[activeIdx]) { e.preventDefault(); pickCourse(optEls[activeIdx].getAttribute('data-id'), true); } }
+      else if (e.key === 'Escape') { closeList(); }
+    });
+    list.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    list.addEventListener('click', function (e) { var o = e.target.closest('.ss-opt'); if (o) pickCourse(o.getAttribute('data-id'), true); });
+    document.addEventListener('click', function (e) { if (!root.contains(e.target) || !e.target.closest('.ss-search')) closeList(); });
+    clearBtn.addEventListener('click', function () { input.value = ''; state.course = null; clearBtn.hidden = true; setHash(''); renderCourse(); input.focus(); renderList(); });
+
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b || !root.contains(b)) return;
+      if (b.hasAttribute('data-course')) {
+        var fromOtherTab = $('#ss-p-course').hidden;
+        showTab('course'); pickCourse(b.getAttribute('data-course'), true);
+        if (fromOtherTab) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      else if (b.hasAttribute('data-mode')) { state.mode = b.getAttribute('data-mode'); renderCourse(); }
+      else if (b.hasAttribute('data-tutor')) { var t = b.getAttribute('data-tutor'); state.tutor = state.tutor === t ? null : t; renderCourse(); }
+      else if (b.hasAttribute('data-day')) { state.day = b.getAttribute('data-day'); renderWeek(); }
+      else if (b.getAttribute('role') === 'tab') { showTab(b.id.replace('ss-tab-', '')); }
+    });
+    $('.ss-tabs').addEventListener('keydown', function (e) {
+      var names = ['course', 'week', 'tutors'], cur = names.indexOf(document.activeElement.id.replace('ss-tab-', ''));
+      if (cur < 0) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); showTab(names[(cur + (e.key === 'ArrowRight' ? 1 : 2)) % 3], true); }
+    });
+  }
+
+  /* ---------- load ---------- */
+  function embedded(key) { var el = $('[data-ss="csv-' + key + '"]'); return el ? el.textContent : ''; }
+  function load(url, key) {
+    if (!url) return Promise.resolve({ text: embedded(key), src: 'the copy pasted in this block' });
+    return fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function (t) { return { text: t, src: url }; })
+      .catch(function (err) { console.warn('[STARS schedule] Could not load ' + url + ' — using the pasted copy.', err); return { text: embedded(key), src: 'the pasted copy (link failed: ' + url + ')' }; });
+  }
+
+  Promise.all([load(CONFIG.scheduleCsvUrl, 'schedule'), load(CONFIG.coverageCsvUrl, 'coverage')]).then(function (res) {
+    build(parseSchedule(parseCSV(res[0].text)), parseCoverage(parseCSV(res[1].text)));
+    renderHeader(); wire(); renderCheck({ schedule: res[0].src, coverage: res[1].src });
+    var m = /stars-course=([A-Za-z0-9]+)/.exec(location.hash);
+    if (m) pickCourse(m[1].toUpperCase(), false); else renderCourse();
+  }).catch(function (e) {
+    console.error('[STARS schedule]', e);
+    $('[data-ss="course-out"]').innerHTML = '<div class="ss-callout"><h3>The schedule couldn’t be loaded.</h3><p>Please <a href="' + esc(CONFIG.contactUrl) + '">contact STARS</a> for tutor availability.</p></div>';
+  });
+})();
+</script>
+</div>
+
+</main>
+</body>
+</html>
