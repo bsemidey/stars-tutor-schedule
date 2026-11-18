@@ -1,0 +1,18 @@
+SAMPLE DATA – Course coverage (fictional tutors)
+Subject,Catalog #,Course Description,Alex Rivera (AR),Jordan Lee (JL),Sam Patel (SP),Maria Gomez (MG),Chris Nguyen (CN),Taylor Brooks (TB),Dana Kim (DK),Luis Herrera (LH)
+COP,2210,Programming I,1,,1,,1,,,1
+COP,3337,Programming II,1,1,,,1,,,
+COP,3530,Data Structures,,1,1,1,,,,1
+COT,3100,Discrete Structures,,,1,,,1,,
+CDA,3102,Computer Architecture,,,,,,1,,
+COP,4338,Systems Programming,,,,1,,,1,
+COP,4610,Operating Systems,,,,,,,1,
+COP,4555,Principles of Programming Languages,,1,,,,,,
+CEN,4010,Software Engineering I,,,,,1,1,,
+CAP,4630,Artificial Intelligence,,,,1,,,,1
+CAP,4770,Data Mining,,,,,,,,
+CGS,1920,Introduction to Computing,1,,,,,,1,
+CTS,1120,Fundamentals of Cybersecurity,,,,,,,,
+CNT,4713,Net-centric Computing,,,,,,,,
+MAD,2104,Discrete Mathematics,,,1,,,,,
+COP,4710,Database Management,,,,,1,,,
